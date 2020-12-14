@@ -12,6 +12,7 @@
 #pragma warning(push)
 #pragma warning(disable:6000 28251)
 #include <dinput.h>
+#include <dinputd.h>
 #pragma warning(pop)
 
 #include <commctrl.h>

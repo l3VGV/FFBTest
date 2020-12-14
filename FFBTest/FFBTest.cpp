@@ -7,6 +7,7 @@
 #include "FFBTest.h"
 
 
+
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -30,6 +31,7 @@ LARGE_INTEGER StartingTime, EndingTime, ElapsedMicroseconds;
 LARGE_INTEGER Frequency;
 DWORD callsNumber = 0, callsTime = 0;
 HINSTANCE g_hInstance;
+HWND g_hDlg;
 
 // Forward declarations of functions included in this code module:
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -96,6 +98,67 @@ BOOL CALLBACK EnumFFDevicesCallback(const DIDEVICEINSTANCE* pInst,
     // We successfully created an IDirectInputDevice8.  So stop looking 
     // for another one.
     g_pDevice = pDevice;
+
+
+
+    HWND  hEdit = GetDlgItem(g_hDlg, IDC_STATIC_DRIVER);
+    wchar_t output[1024] = { 0 };
+
+    if (IID_IDirectInputPIDDriver == pInst->guidFFDriver)
+        SetWindowText(hEdit, _T("{CLSID_Microsoft USB PID Class Driver}"));
+    else
+    {
+        hr = StringFromGUID2(pInst->guidFFDriver, output, 1000);
+        if (SUCCEEDED(hr))
+        {
+            SetWindowText(hEdit, output);
+        }
+        
+    }
+    
+
+    hEdit = GetDlgItem(g_hDlg, IDC_STATIC_JOYNAME);
+    SetWindowText(hEdit, pInst->tszProductName);
+
+
+    //DIPROP_GETPORTDISPLAYNAME
+
+    DIPROPSTRING dip;
+    dip.diph.dwSize = sizeof(DIPROPSTRING);
+    dip.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+    dip.diph.dwObj = 0;
+    dip.diph.dwHow = DIPH_DEVICE;
+
+    hr = g_pDevice->GetProperty(DIPROP_GETPORTDISPLAYNAME, &dip.diph);
+
+    if (SUCCEEDED(hr))
+    {
+        hEdit = GetDlgItem(g_hDlg, IDC_STATIC_PORT);
+        SetWindowText(hEdit, dip.wsz);
+    }
+
+
+    //DIPROPDWORD dipdw;  // DIPROPDWORD contains a DIPROPHEADER structure. 
+    //HRESULT hr;
+
+    //dipdw.diph.dwSize = sizeof(DIPROPDWORD);
+    //dipdw.diph.dwHeaderSize = sizeof(DIPROPHEADER);
+    //dipdw.diph.dwObj = 0; // device property 
+    //dipdw.diph.dwHow = DIPH_DEVICE;
+
+    //hr = idirectinputdevice9_GetProperty(pdid, DIPROP_BUFFERSIZE, &dipdw.diph);
+    //if (SUCCEEDED(hr)) {
+
+
+    //    hEdit = GetDlgItem(hDlg, );
+
+    //}
+
+    //
+   // 
+    //
+
+       // SetWindowText(hEdit, output);
 
     return DIENUM_STOP;
 }
@@ -206,6 +269,8 @@ HRESULT InitDirectInput(HWND hDlg)
     eff.lpvTypeSpecificParams = &cf;
     eff.dwStartDelay = 0;
 
+    
+
     // Create the prepared effect
     for (int i = 0; i < 4; i++)
     if (FAILED(hr = g_pDevice->CreateEffect(GUID_ConstantForce,
@@ -264,6 +329,7 @@ void FFBTimer(HWND hDlg, UINT message, UINT_PTR timerID, DWORD milliseconds)
 
     DIEFFECT eff = {};
     LONG rglDirection[2] = { 0, 0 };
+    HWND  hEdit = GetDlgItem(hDlg, IDC_STATIC_EFFECTTIME);
 
     for (DWORD i = 0; i < 4; i++)
     {
@@ -296,7 +362,7 @@ void FFBTimer(HWND hDlg, UINT message, UINT_PTR timerID, DWORD milliseconds)
         {
             wchar_t output[1024] = { 0 };
 
-            HWND  hEdit = GetDlgItem(hDlg, IDC_STATIC_EFFECTTIME);
+            
             swprintf_s(output, _T("%u"), callsTime / callsNumber);
             SetWindowText(hEdit, output);
 
@@ -340,6 +406,7 @@ INT_PTR CALLBACK MainDlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
     {
     case WM_INITDIALOG:
     {
+        g_hDlg = hDlg;
         if (FAILED(InitDirectInput(hDlg)))
         {
             MessageBox(nullptr, _T("Error Initializing DirectInput ")
